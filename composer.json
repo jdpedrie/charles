@@ -1,0 +1,21 @@
+{
+    "name": "jdp/charles",
+    "description": "Run PHPdoc code samples in PHPUnit",
+    "require": {
+        "phpunit/phpunit": ">=4.8",
+        "phpdocumentor/phpdocumentor": "2.8.*"
+    },
+    "license": "Apache 2.0",
+    "authors": [
+        {
+            "name": "John Dennis Pedrie",
+            "email": "john@pedrie.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "Jdp\\Charles\\": "src"
+        }
+    }
+}
