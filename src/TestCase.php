@@ -40,29 +40,28 @@ class TestCase extends \PHPUnit_Framework_TestCase
         parent::checkRequirements();
 
         $annotations = $this->getAnnotations();
-        $class = new TestClass($annotations);
-        $method = new TestMethod($annotations);
+        $class = new TestClass($annotations['class']);
+        $method = new TestMethod($annotations['method']);
 
         try {
             $this->checkValidity($class, $method);
+
+            $code = $this->getExamplesFromMethod($class->integration(), $method->integration());
+            if (count($code) > 1 && is_null($method->exampleIndex())) {
+                throw new Exception(sprintf(
+                    'Ambiguous reference to code example block. In docblocks with ' .
+                    'multiple examples, please use @exampleIndex to target the correct example.' .
+                    PHP_EOL .
+                    PHP_EOL .
+                    'Error occurred on test of %s::%s',
+                    $class,
+                    $method
+                ));
+            }
         } catch (Exception $e) {
             $this->exampleCode = null;
 
             throw $e;
-        }
-
-        $code = $this->getExamplesFromMethod($class->integration(), $method->integration());
-        if (count($code) > 1 && is_null($method->exampleIndex())) {
-            $this->exampleCode = null;
-            throw new Exception(sprintf(
-                'Ambiguous reference to code example block. In docblocks with ' .
-                'multiple examples, please use @exampleIndex to target the correct example.' .
-                PHP_EOL .
-                PHP_EOL .
-                'Error occurred on test of %s::%s',
-                $class,
-                $method
-            ));
         }
 
         $index = $method->exampleIndex() ? $method->exampleIndex() : 0;
@@ -74,15 +73,12 @@ class TestCase extends \PHPUnit_Framework_TestCase
         }
 
         if (!is_null($method->returnVariable())) {
-            $returnVariableCleaned = $method->returnVariable();
-            if (strpos($method->returnVariable(), '$') === false) {
-                $returnVariableCleaned = '$'. $method->returnVariable();
-            }
+            $returnVariable = str_replace('$$', '$', '$'. $method->returnVariable());
 
-            $code = $code . 'return '. $returnVariableCleaned .';';
+            $code = $code . 'return '. $returnVariable .';';
         }
 
-        $eval = function(array $locals = []) use ($code) {
+        $this->exampleCode = function(array $locals = []) use ($code) {
             extract($locals);
 
             ob_start();
@@ -91,8 +87,6 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
             return new Result($res, $output);
         };
-
-        $this->exampleCode = $eval;
     }
 
     private function checkValidity(TestClass $class, TestMethod $method)
@@ -115,8 +109,8 @@ class TestCase extends \PHPUnit_Framework_TestCase
 
     private function getExamplesFromMethod($class, $method)
     {
-        $class = new ReflectionMethod($class, $method);
-        $doc = new DocBlock($class);
+        $reflector = new ReflectionMethod($class, $method);
+        $doc = new DocBlock($reflector);
         $text = $doc->getText();
 
         $converter = new Parsedown;

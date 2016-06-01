@@ -13,7 +13,6 @@ class TestMethod
 
     public function __construct(array $annotations)
     {
-        $annotations = $annotations['method'];
         if (!isset($annotations['integration'])) {
             throw new LogicException('integration method is required');
         }

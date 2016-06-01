@@ -10,11 +10,11 @@ class TestClass
 
     public function __construct(array $annotations)
     {
-        if (!isset($annotations['class']['integration'][0])) {
+        if (!isset($annotations['integration'][0])) {
             throw new LogicException('integration class is not specified');
         }
 
-        $this->integration = $annotations['class']['integration'][0];
+        $this->integration = $annotations['integration'][0];
     }
 
     public function integration()
