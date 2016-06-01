@@ -3,7 +3,8 @@
     "description": "Run PHPdoc code samples in PHPUnit",
     "require": {
         "phpunit/phpunit": ">=4.8",
-        "phpdocumentor/phpdocumentor": "2.8.*"
+        "phpdocumentor/phpdocumentor": "2.8.*",
+        "erusev/parsedown": "^1.6"
     },
     "license": "Apache 2.0",
     "authors": [

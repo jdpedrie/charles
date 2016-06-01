@@ -2,15 +2,15 @@
 
 namespace Jdp\Charles;
 
+use DOMDocument;
 use Jdp\Charles\TestCase\TestClass;
 use Jdp\Charles\TestCase\TestMethod;
 use ReflectionMethod;
+use Parsedown;
 use phpDocumentor\Reflection\DocBlock;
 
 class TestCase extends \PHPUnit_Framework_TestCase
 {
-    const EXAMPLE_REGEX = '/[.??^`]{0,}```(.*?)```[.??^`]{0,}/s';
-
     /**
      * @var callable
      */
@@ -119,10 +119,19 @@ class TestCase extends \PHPUnit_Framework_TestCase
         $doc = new DocBlock($class);
         $text = $doc->getText();
 
-        $examples = [];
+        $converter = new Parsedown;
+        $document = new DOMDocument;
 
-        preg_match_all(self::EXAMPLE_REGEX, $text, $examples);
+        $parsedText = $converter->text($text);
+        $document->loadHTML($parsedText);
 
-        return $examples[1];
+        $res = [];
+
+        $examples = $document->getElementsByTagName('code');
+        foreach ($examples as $example) {
+            $res[] = $example->textContent;
+        }
+
+        return $res;
     }
 }
