@@ -1,6 +1,6 @@
 <?php
 
-namespace Jdp\Charles;
+namespace Jdp\Charles\TestCase;
 
 class Result
 {

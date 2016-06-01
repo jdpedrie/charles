@@ -1,6 +1,6 @@
 {
     "name": "jdp/charles",
-    "description": "Run PHPdoc code samples in PHPUnit",
+    "description": "Charles: In charge of your example code",
     "require": {
         "phpunit/phpunit": ">=4.8",
         "phpdocumentor/phpdocumentor": "2.8.*",

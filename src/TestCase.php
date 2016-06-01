@@ -3,13 +3,16 @@
 namespace Jdp\Charles;
 
 use DOMDocument;
+use Jdp\Charles\TestCase\Cleanup;
+use Jdp\Charles\TestCase\Code;
 use Jdp\Charles\TestCase\TestClass;
 use Jdp\Charles\TestCase\TestMethod;
 use ReflectionMethod;
 use Parsedown;
 use phpDocumentor\Reflection\DocBlock;
+use PHPUnit_Framework_TestCase;
 
-class TestCase extends \PHPUnit_Framework_TestCase
+class TestCase extends PHPUnit_Framework_TestCase
 {
     /**
      * @var callable
@@ -17,22 +20,63 @@ class TestCase extends \PHPUnit_Framework_TestCase
     private $exampleCode;
 
     /**
+     * @var Cleanup
+     */
+    private $cleanup;
+
+    /**
+     * @var Code
+     */
+    private $code;
+
+    /**
      * Run the example code and get a result
      *
      * @param  array $locals A key/value list of variables to be passed to the
      *         example code. These variables will be extracted into the local
      *         scope of the example run.
-     * @return Result
+     * @return Jdp\Charles\Result
      * @throws Jdp\Charles\Exception
      */
     public function runExample($locals = [])
     {
-        if (is_null($this->exampleCode)) {
+        if (is_null($this->code)) {
             throw new Exception('Could not run integration tests because no code could be parsed');
         }
 
-        $fn = $this->exampleCode;
-        return $fn($locals);
+        return $this->code->execute($locals);
+    }
+
+    public function tearDown()
+    {
+        parent::tearDown();
+
+        $this->cleanup->cleanup();
+    }
+
+    public function cleanup($job, callable $callback)
+    {
+        $this->cleanup->addJob($job, $callback);
+    }
+
+    public function getFromMethod($method, $returnVariable = null, $index = 0, array $locals = [])
+    {
+        $examples = $this->getExamplesFromMethod($this->exampleClass->integration(), $method);
+
+        if (!isset($examples[$index])) {
+            throw new Exception(sprintf(
+                'Could not get index %d from method %s::%s',
+                $index, $this->exampleClass->integration(), $method
+            ));
+        }
+
+        $code = new Code($examples[$index]);
+
+        if (!is_null($returnVariable)) {
+            $code->appendReturnStatement($returnVariable);
+        }
+
+        return $code->execute($locals);
     }
 
     protected function checkRequirements()
@@ -40,8 +84,10 @@ class TestCase extends \PHPUnit_Framework_TestCase
         parent::checkRequirements();
 
         $annotations = $this->getAnnotations();
-        $class = new TestClass($annotations['class']);
-        $method = new TestMethod($annotations['method']);
+        $class = $this->exampleClass = new TestClass($annotations['class']);
+        $method = $this->exampleMethod = new TestMethod($annotations['method']);
+
+        $this->cleanup = new Cleanup($annotations['method']);
 
         try {
             $this->checkValidity($class, $method);
@@ -54,39 +100,27 @@ class TestCase extends \PHPUnit_Framework_TestCase
                     PHP_EOL .
                     PHP_EOL .
                     'Error occurred on test of %s::%s',
-                    $class,
-                    $method
+                    $class->integration(),
+                    $method->integration()
                 ));
             }
         } catch (Exception $e) {
-            $this->exampleCode = null;
+            $this->code = null;
 
             throw $e;
         }
 
-        $index = $method->exampleIndex() ? $method->exampleIndex() : 0;
-        $code = $code[(int)$index];
+        $index = $method->exampleIndex() ? (int) $method->exampleIndex() : 0;
+        $this->code = new Code($code[$index]);
 
         foreach ($method->dependsOn() as $depend) {
             $dependency = $this->getExamplesFromMethod($class->integration(), $depend);
-            $code = $dependency[0] . $code;
+            $this->code->prepend($dependency[0]);
         }
 
         if (!is_null($method->returnVariable())) {
-            $returnVariable = str_replace('$$', '$', '$'. $method->returnVariable());
-
-            $code = $code . 'return '. $returnVariable .';';
+            $this->code->appendReturnStatement($method->returnVariable());
         }
-
-        $this->exampleCode = function(array $locals = []) use ($code) {
-            extract($locals);
-
-            ob_start();
-            $res = eval($code);
-            $output = ob_end_clean();
-
-            return new Result($res, $output);
-        };
     }
 
     private function checkValidity(TestClass $class, TestMethod $method)
