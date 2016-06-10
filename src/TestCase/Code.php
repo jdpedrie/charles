@@ -37,19 +37,15 @@ class Code
     {
         extract($locals);
 
+        ob_start();
         try {
-            ob_start();
             $res = eval($this->build());
-            $output = ob_get_clean();
-        } catch (\Exception $err) {
-            throw new Exception(sprintf(
-                'Error message: %s' .
-                PHP_EOL .
-                PHP_EOL .
-                '%s',
+            $output = ob_get_contents();
+            ob_end_clean();
+        } catch (\Exception $e) {
+            ob_end_clean();
 
-                $err->getMessage(), $this->code
-            ), $err->getCode(), $err);
+            throw $e;
         }
 
         return new Result($res, $output);

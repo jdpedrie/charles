@@ -1,8 +1,11 @@
 # Charles: Run PHPDoc code examples in PHPUnit
 
+Got a lot of example code in your DocBlocks? Put Charles In Charge!
+
 Charles is just a guy who wants to use your library. He likes copying and
 pasting example code to see it in action. In fact, he wants to copy and paste
-all your examples to help you make sure it works!
+all your examples to help you make sure it works and prevent documentation
+regression.
 
 ## Disclaimer
 

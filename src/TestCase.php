@@ -135,8 +135,8 @@ class TestCase extends PHPUnit_Framework_TestCase
         if (!method_exists($class->integration(), $method->integration())) {
             throw new Exception(sprintf(
                 'Integration Method %s does not exist on class %s',
-                $method,
-                $class
+                $method->integration(),
+                $class->integration()
             ));
         }
     }
