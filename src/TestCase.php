@@ -147,10 +147,17 @@ class TestCase extends PHPUnit_Framework_TestCase
         $doc = new DocBlock($reflector);
         $text = $doc->getText();
 
+        $parts = explode('Example:', $text);
+
+        if (strpos($text, 'Example:') === false) {
+            throw new Exception('Tested method does not have valid examples '.
+                'present. Examples must be preceded by "Example:".');
+        }
+
         $converter = new Parsedown;
         $document = new DOMDocument;
 
-        $parsedText = $converter->text($text);
+        $parsedText = $converter->text($parts[1]);
         $document->loadHTML($parsedText);
 
         $res = [];
