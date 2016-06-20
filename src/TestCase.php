@@ -3,7 +3,7 @@
 namespace Jdp\Charles;
 
 use DOMDocument;
-use Jdp\Charles\TestCase\Cleanup;
+use Jdp\Charles\TestCase\Jobs;
 use Jdp\Charles\TestCase\Code;
 use Jdp\Charles\TestCase\TestClass;
 use Jdp\Charles\TestCase\TestMethod;
@@ -20,7 +20,12 @@ class TestCase extends PHPUnit_Framework_TestCase
     private $exampleCode;
 
     /**
-     * @var Cleanup
+     * @var Jobs
+     */
+    private $setup;
+
+    /**
+     * @var Jobs
      */
     private $cleanup;
 
@@ -47,16 +52,18 @@ class TestCase extends PHPUnit_Framework_TestCase
         return $this->code->execute($locals);
     }
 
+    public function setUp()
+    {
+        parent::setUp();
+
+        $this->setup->run();
+    }
+
     public function tearDown()
     {
         parent::tearDown();
 
-        $this->cleanup->cleanup();
-    }
-
-    public function cleanup($job, callable $callback)
-    {
-        $this->cleanup->addJob($job, $callback);
+        $this->cleanup->run();
     }
 
     public function getFromMethod($method, $returnVariable = null, $index = 0, array $locals = [])
@@ -87,7 +94,13 @@ class TestCase extends PHPUnit_Framework_TestCase
         $class = $this->exampleClass = new TestClass($annotations['class']);
         $method = $this->exampleMethod = new TestMethod($annotations['method']);
 
-        $this->cleanup = new Cleanup($annotations['method']);
+        $annotations['method'] += [
+            'setup' => [],
+            'cleanup' => []
+        ];
+
+        $this->setup = new Jobs($this, $annotations['method']['setup']);
+        $this->cleanup = new Jobs($this, $annotations['method']['cleanup']);
 
         try {
             $this->checkValidity($class, $method);
